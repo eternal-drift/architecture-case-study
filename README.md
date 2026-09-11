@@ -1,4 +1,4 @@
-# Architecture Case Study: Scaling a Hybrid Cloud/On-Prem Content Platform
+# Architecture Case Study: Scaling a Hybrid Cloud / On-Prem Content Platform
 
 ## Context
 
