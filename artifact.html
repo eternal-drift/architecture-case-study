@@ -1,0 +1,560 @@
+<title>Outbound-Only</title>
+<style>
+  :root{
+    --bg:#f6f4ef;
+    --surface:#ffffff;
+    --surface-2:#efece3;
+    --ink:#1d211f;
+    --ink-soft:#5b6259;
+    --ink-faint:#8b9088;
+    --line:#dcd8cc;
+    --accent:#2f5d53;
+    --accent-soft:#dce8e2;
+    --accent-ink:#173a33;
+    --reject:#9c5a4a;
+    --reject-soft:#f1e4de;
+    --mono-bg:#eae6d8;
+    --shadow: 0 1px 2px rgba(30,33,25,0.06), 0 8px 24px -12px rgba(30,33,25,0.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#14181a;
+      --surface:#1b201f;
+      --surface-2:#212724;
+      --ink:#e9e6dc;
+      --ink-soft:#a9ab9f;
+      --ink-faint:#767a70;
+      --line:#2d332f;
+      --accent:#6fae9c;
+      --accent-soft:#233330;
+      --accent-ink:#bfe3d6;
+      --reject:#c98670;
+      --reject-soft:#2d2521;
+      --mono-bg:#20241f;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14181a;
+    --surface:#1b201f;
+    --surface-2:#212724;
+    --ink:#e9e6dc;
+    --ink-soft:#a9ab9f;
+    --ink-faint:#767a70;
+    --line:#2d332f;
+    --accent:#6fae9c;
+    --accent-soft:#233330;
+    --accent-ink:#bfe3d6;
+    --reject:#c98670;
+    --reject-soft:#2d2521;
+    --mono-bg:#20241f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"Source Serif 4", Georgia, "Times New Roman", serif;
+    font-size:17px; line-height:1.65;
+  }
+  h1,h2,h3,h4{ font-family:"Fraunces", Georgia, serif; text-wrap:balance; color:var(--ink); }
+  .mono, .tag, .kicker, .status, code, .num{
+    font-family:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+  a{ color:var(--accent); }
+
+  /* ---- Shell layout ---- */
+  .shell{ display:grid; grid-template-columns: 260px minmax(0,1fr); max-width:1240px; margin:0 auto; }
+  @media (max-width: 880px){ .shell{ grid-template-columns: 1fr; } }
+
+  nav.rail{
+    position:sticky; top:0; align-self:start; height:100vh; overflow-y:auto;
+    padding:28px 20px 40px; border-right:1px solid var(--line);
+    background:var(--surface);
+  }
+  @media (max-width: 880px){ nav.rail{ position:static; height:auto; border-right:none; border-bottom:1px solid var(--line); } }
+
+  .brand{ display:flex; align-items:baseline; gap:8px; margin-bottom:4px; }
+  .brand .mark{ width:9px; height:9px; background:var(--accent); display:inline-block; transform:rotate(45deg); flex:none; }
+  .brand-text{ font-family:"Fraunces", serif; font-weight:600; font-size:1.02rem; letter-spacing:0.01em; }
+  .brand-sub{ font-size:0.72rem; color:var(--ink-faint); margin:0 0 22px; letter-spacing:0.03em; text-transform:uppercase; }
+
+  nav.rail ol{ list-style:none; margin:0; padding:0; counter-reset: adr; }
+  nav.rail li{ counter-increment: adr; margin:0; }
+  nav.rail a{
+    display:flex; gap:10px; align-items:baseline; text-decoration:none; color:var(--ink-soft);
+    padding:9px 4px; border-top:1px solid var(--line); font-size:0.86rem; line-height:1.35;
+  }
+  nav.rail li:last-child a{ border-bottom:1px solid var(--line); }
+  nav.rail a:hover{ color:var(--accent); }
+  nav.rail a::before{
+    content: counter(adr, decimal-leading-zero); font-family:"IBM Plex Mono", monospace;
+    color:var(--ink-faint); font-size:0.76rem; flex:none; padding-top:1px;
+  }
+  nav.rail a.index-link::before{ content:"—"; }
+
+  .rail-foot{ margin-top:26px; padding-top:16px; border-top:1px dashed var(--line); font-size:0.74rem; color:var(--ink-faint); }
+
+  main{ min-width:0; }
+
+  /* ---- Cover / index ---- */
+  .cover{ padding:64px clamp(24px,5vw,72px) 40px; border-bottom:1px solid var(--line); }
+  .kicker{ font-size:0.76rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--accent-ink); background:var(--accent-soft); display:inline-block; padding:4px 10px; border-radius:2px; margin-bottom:20px; }
+  .cover h1{ font-size:clamp(2.1rem, 4vw, 3rem); font-weight:600; margin:0 0 18px; max-width:16ch; }
+  .cover .lede{ max-width:62ch; color:var(--ink-soft); font-size:1.12rem; margin:0 0 28px; }
+  .cover .lede + p{ max-width:62ch; color:var(--ink-soft); }
+
+  .constraint-box{
+    max-width:70ch; margin-top:28px; padding:18px 22px; background:var(--surface-2);
+    border-left:3px solid var(--accent); font-size:0.98rem;
+  }
+  .constraint-box b{ color:var(--ink); }
+
+  .role-line{ margin-top:28px; font-size:0.95rem; color:var(--ink-soft); max-width:62ch; }
+
+  .index-grid{ padding:8px clamp(24px,5vw,72px) 56px; display:grid; gap:1px; background:var(--line); border:1px solid var(--line); margin-top:8px; }
+  .index-row{
+    display:grid; grid-template-columns: 56px 1fr 130px; gap:16px; align-items:center;
+    background:var(--surface); padding:16px 18px; text-decoration:none; color:var(--ink);
+  }
+  .index-row:hover{ background:var(--surface-2); }
+  .index-row .n{ font-family:"IBM Plex Mono",monospace; color:var(--ink-faint); font-size:0.85rem; }
+  .index-row .t{ font-size:0.98rem; }
+  .index-row .t small{ display:block; color:var(--ink-soft); font-size:0.82rem; margin-top:3px; font-family:"Source Serif 4",serif; }
+  .index-row .s{ font-family:"IBM Plex Mono",monospace; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em; color:var(--accent-ink); background:var(--accent-soft); padding:4px 8px; text-align:center; border-radius:2px; white-space:nowrap; }
+
+  .diagram-block{ padding: 8px clamp(24px,5vw,72px) 60px; border-bottom:1px solid var(--line); }
+  .diagram-block h2{ font-size:1.1rem; margin:0 0 4px; }
+  .diagram-block .cap{ color:var(--ink-faint); font-size:0.84rem; margin:0 0 18px; }
+  .diagram-frame{ background:var(--surface); border:1px solid var(--line); padding:20px; box-shadow:var(--shadow); overflow-x:auto; }
+  .diagram-frame pre.mermaid{ margin:0; min-width:640px; }
+
+  /* ---- ADR article ---- */
+  article.adr{ padding:56px clamp(24px,5vw,72px); border-bottom:1px solid var(--line); scroll-margin-top: 20px; }
+  article.adr:last-of-type{ border-bottom:none; }
+
+  .adr-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:6px; flex-wrap:wrap; }
+  .adr-num{ font-family:"IBM Plex Mono",monospace; font-size:0.8rem; color:var(--ink-faint); letter-spacing:0.04em; margin:0 0 10px; }
+  .adr-head h2{ font-size:clamp(1.5rem,2.6vw,1.95rem); margin:0; max-width:26ch; font-weight:600; }
+  .status-pill{ font-family:"IBM Plex Mono",monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.05em; background:var(--accent-soft); color:var(--accent-ink); padding:5px 10px; border-radius:2px; white-space:nowrap; margin-top:6px; }
+
+  article.adr h3{ font-size:0.78rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--accent-ink); margin:40px 0 12px; display:flex; align-items:center; gap:10px; }
+  article.adr h3::after{ content:""; flex:1; height:1px; background:var(--line); }
+  article.adr h3:first-of-type{ margin-top:30px; }
+
+  article.adr p{ max-width:72ch; color:var(--ink); }
+  article.adr p.soft{ color:var(--ink-soft); }
+
+  .options{ display:grid; gap:14px; max-width:78ch; }
+  .option{ background:var(--surface-2); border-left:3px solid var(--line); padding:14px 18px; }
+  .option.rejected{ border-left-color:var(--reject); }
+  .option.chosen{ border-left-color:var(--accent); background:var(--accent-soft); }
+  .option .lbl{ font-family:"IBM Plex Mono",monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:6px; display:block; color:var(--ink-faint); }
+  .option.rejected .lbl{ color:var(--reject); }
+  .option.chosen .lbl{ color:var(--accent-ink); }
+  .option p{ margin:0; font-size:0.96rem; }
+  .option p + p{ margin-top:8px; }
+
+  .tradeoff-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0; max-width:88ch; border:1px solid var(--line); }
+  @media (max-width:700px){ .tradeoff-grid{ grid-template-columns:1fr; } }
+  .tradeoff-col{ padding:18px 20px; }
+  .tradeoff-col + .tradeoff-col{ border-left:1px solid var(--line); }
+  @media (max-width:700px){ .tradeoff-col + .tradeoff-col{ border-left:none; border-top:1px solid var(--line); } }
+  .tradeoff-col h4{ font-family:"IBM Plex Mono",monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; margin:0 0 12px; }
+  .tradeoff-col.gave h4{ color:var(--reject); }
+  .tradeoff-col.got h4{ color:var(--accent-ink); }
+  .tradeoff-col ul{ margin:0; padding:0; list-style:none; display:grid; gap:10px; }
+  .tradeoff-col li{ font-size:0.93rem; padding-left:16px; position:relative; }
+  .tradeoff-col li::before{ content:"–"; position:absolute; left:0; color:var(--ink-faint); }
+
+  .reconsider{ max-width:72ch; background:var(--mono-bg); padding:16px 20px; border:1px dashed var(--line); font-size:0.95rem; }
+  .reconsider .lbl{ font-family:"IBM Plex Mono",monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-faint); display:block; margin-bottom:8px; }
+
+  .back-top{ display:inline-block; margin-top:8px; font-family:"IBM Plex Mono",monospace; font-size:0.76rem; color:var(--ink-faint); text-decoration:none; }
+  .back-top:hover{ color:var(--accent); }
+
+  footer.foot{ padding:40px clamp(24px,5vw,72px) 64px; color:var(--ink-faint); font-size:0.85rem; }
+</style>
+
+<div class="shell">
+  <nav class="rail">
+    <div class="brand"><span class="mark"></span><span class="brand-text">Case Study</span></div>
+    <p class="brand-sub">Architecture Decisions</p>
+    <ol>
+      <li><a href="#top" class="index-link">Overview</a></li>
+      <li><a href="#adr-1">Outbound-only tunnel</a></li>
+      <li><a href="#adr-2">Binary via S3 presign</a></li>
+      <li><a href="#adr-3">Lambda + SQS provisioning</a></li>
+      <li><a href="#adr-4">DynamoDB connection state</a></li>
+      <li><a href="#adr-5">Events platform pub/sub</a></li>
+      <li><a href="#adr-6">Terraform over Crossplane</a></li>
+    </ol>
+    <p class="rail-foot">Six ADRs from an AWS-hosted control plane bridging cloud consumers to on-prem enterprise content systems. Led among a 4–6 engineer platform team.</p>
+  </nav>
+
+  <main>
+    <section class="cover" id="top">
+      <span class="kicker">Architecture Decision Records</span>
+      <h1>Scaling a hybrid cloud / on&#8209;prem content platform</h1>
+      <p class="lede">Six real decisions from the AWS control plane of a federated content-integration platform — the cloud side that lets partner apps reach document systems sitting inside customer data centers.</p>
+      <p>Each record below follows the same shape: the constraint we were actually under, the options we weighed, what we chose, what it cost us, and what changed once it ran in production for a year rather than a sprint.</p>
+
+      <div class="constraint-box">
+        <b>The constraint that shaped everything:</b> customers will not open inbound firewall ports into their data centers, ever — and the platform still has to be low-latency, reliable at enterprise SLA, and operable by a small team.
+      </div>
+
+      <p class="role-line">I led among a small platform team on the AWS-facing side of this work — API Gateway, Lambda, DynamoDB, SQS/SNS, S3, and the Terraform layer underneath all of it. The decisions below are ones I made directly or drove consensus on with the team.</p>
+    </section>
+
+    <section class="index-grid">
+      <a class="index-row" href="#adr-1"><span class="n">ADR&nbsp;001</span><span class="t">Outbound-only WebSocket tunnel<small>No inbound ports, ever — the Broker calls out, not in.</small></span><span class="s">Production</span></a>
+      <a class="index-row" href="#adr-2"><span class="n">ADR&nbsp;002</span><span class="t">S3 presigned URLs for binary content<small>Keeping large files off the control-plane channel.</small></span><span class="s">Production</span></a>
+      <a class="index-row" href="#adr-3"><span class="n">ADR&nbsp;003</span><span class="t">Lambda + SQS async provisioning<small>Event-driven setup on every new subscription.</small></span><span class="s">Production</span></a>
+      <a class="index-row" href="#adr-4"><span class="n">ADR&nbsp;004</span><span class="t">DynamoDB for connection &amp; reply state<small>Key-value state for a stateless, horizontally scaled fleet.</small></span><span class="s">Production</span></a>
+      <a class="index-row" href="#adr-5"><span class="n">ADR&nbsp;005</span><span class="t">Kafka + SQS + DynamoDB events platform<small>Durable, replayable pub/sub for partner notifications.</small></span><span class="s">Production</span></a>
+      <a class="index-row" href="#adr-6"><span class="n">ADR&nbsp;006</span><span class="t">Terraform over Crossplane<small>Cutting over IaC after a year of production data.</small></span><span class="s">Migration complete</span></a>
+    </section>
+
+    <section class="diagram-block">
+      <h2>Platform topology</h2>
+      <p class="cap">Where each decision below sits in the actual request path.</p>
+      <div class="diagram-frame">
+<pre class="mermaid">
+flowchart LR
+    subgraph OP["Customer data center — on-prem"]
+        Broker["Broker service"]
+    end
+
+    subgraph AWS["AWS — cloud control plane"]
+        GW["Gateway API"]
+        Lambda["Provisioning Lambda"]
+        SQS1[("Provisioning SQS")]
+        DDB[("DynamoDB — connection + event state")]
+        S3[("S3 — binary payloads")]
+        Kafka[("Kafka — event bus")]
+        SQS2[("Subscriber SQS")]
+    end
+
+    Consumers["Partner / consumer systems"] --> GW
+    Broker -- "outbound WebSocket only" --> GW
+    GW <--> DDB
+    GW --> Lambda
+    Lambda <--> SQS1
+    Broker -- "presigned GET/PUT" --> S3
+    GW -- "presigned GET/PUT" --> S3
+    GW --> Kafka
+    Kafka --> SQS2
+</pre>
+      </div>
+    </section>
+
+    <!-- ADR 001 -->
+    <article class="adr" id="adr-1">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;001 · Connectivity</p>
+          <h2>Outbound-only WebSocket tunnel between on-prem and cloud</h2>
+        </div>
+        <span class="status-pill">Accepted · in production since GA</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>The platform's whole value proposition is bridging cloud-hosted consumer apps to on-prem enterprise content systems — document repositories that live inside customer data centers for compliance and data-residency reasons. Those repositories are never going to be directly reachable from the internet.</p>
+      <p class="soft">We needed the cloud control plane to dispatch work to an on-prem agent (the Broker) and get results back near real-time, without asking every enterprise customer's infosec team to open an inbound port. For an enterprise sales motion, "please open a firewall rule" is close to a non-starter — it adds a security review cycle to onboarding and a support burden forever after.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — Inbound cloud→on-prem</span><p>Traditional client-server, cloud pushes to an on-prem listener. Requires customers to expose a service to the internet, or stand up VPN/PrivateLink per customer. Kills the "no on-prem infra team required" pitch.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected as primary — Polling</span><p>Broker periodically polls for work. Satisfies the no-inbound-ports rule and is simple, but latency is bounded by poll interval — tight polling for low latency means high request volume at scale, most of it for nothing.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — Outbound persistent WebSocket tunnel</span><p>Broker opens and holds a long-lived connection outbound to the Gateway API. Broker initiates it (satisfies the constraint), then the channel is bidirectional and low-latency for its life. Adds connection-lifecycle complexity: reconnect/backoff, keepalive, multi-instance connection tracking.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>We built the outbound-only persistent tunnel using native ASP.NET Core WebSockets rather than a managed WebSocket gateway product. The Broker authenticates via a one-time bootstrap-token exchange, then upgrades to a long-lived connection with its own reconnect/keepalive logic. All dispatch and results flow over this channel; binary payloads explicitly do not (ADR&nbsp;002). We kept the implementation in-house specifically so connection-routing stayed in our control — this mattered directly for ADR&nbsp;004.</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>Managed WebSocket infrastructure — we own connection scaling, routing, and framing ourselves.</li>
+            <li>A standing resource that can silently die (network blip, LB idle timeout) — required real keepalive/monitoring investment.</li>
+            <li>Every protocol change is now a coordinated release across every Broker version in the field.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>Zero inbound firewall requirement for any customer — removed a security-review blocker from onboarding.</li>
+            <li>Low-latency, cloud-initiated dispatch with no polling overhead.</li>
+            <li>One mechanism every future cloud-to-on-prem feature reuses, not a grab bag of workarounds.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">This became a documented, enforced platform constraint: any new cloud-to-on-prem feature reuses this tunnel. It has held up at multi-region, multi-hundred-customer scale. The real lesson: reconnect/backoff and connection-health detection needed far more investment than happy-path dispatch — that's where production incidents actually came from.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>I'd look harder at a managed WebSocket gateway up front to offload connection-state tracking — we ended up building a DynamoDB-backed version of that ourselves anyway (ADR&nbsp;004).</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <!-- ADR 002 -->
+    <article class="adr" id="adr-2">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;002 · Data movement</p>
+          <h2>S3 presigned URLs for binary content, not the tunnel</h2>
+        </div>
+        <span class="status-pill">Accepted · in production</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>The platform moves documents — sometimes large ones, tens to low-hundreds of MB — between consumers, the cloud control plane, and the on-prem Broker. Early on, an iteration sent binary payloads as frames over the same WebSocket tunnel from ADR&nbsp;001, since the channel already existed and was authenticated.</p>
+      <p class="soft">That caused real problems: one large transfer could saturate a Broker's connection for its duration, during which no other job dispatch or result could get through. At scale, one customer's large-document workflow could visibly degrade responsiveness for every other job on the same connection.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — Chunk &amp; prioritize on the tunnel</span><p>Add chunking, backpressure, prioritization to the existing channel. Solvable in principle, but adds real complexity to a channel meant to stay simple, and doesn't fix the core issue: one connection doing two jobs with very different throughput profiles.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Dedicated transfer connection</span><p>A second WebSocket or raw stream just for binary data. Still constrained by no-inbound for the download direction, and adds another connection type to secure and monitor for no clear gain.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — Object storage with presigned URLs</span><p>Upload: writer puts to S3, receiver gets a presigned GET URL and downloads directly. The tunnel carries only the URL and metadata, never the bytes.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>Binary content must not travel over the WebSocket tunnel — full stop. This became a hard, documented platform rule rather than a per-feature judgment call.</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>An extra hop and a dependency on object-storage availability for any file-bearing workflow.</li>
+            <li>Presigned URL expiry/scoping had to be right — too long is a security exposure, too short breaks slow-link transfers.</li>
+            <li>Brokers need outbound HTTPS to the storage endpoint specifically, one more egress rule to document.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>Control-plane latency stays flat regardless of file size or concurrent transfer count.</li>
+            <li>Transfer throughput scales independently of the tunnel — object storage handles concurrency far better than one socket ever could.</li>
+            <li>KMS encryption at rest and standard lifecycle policies for free instead of bespoke handling.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">Fixed the "one customer's big file degrades everyone" problem outright, and shipped alongside a broader containerized-deployment modernization — easier to land as one coordinated change across every customer's Broker fleet at once.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>Presigned-URL TTL tuning was trial-and-error — too conservative at first, then widened after slow-link failures. I'd bake in adaptive expiry based on payload size and historical transfer time from day one.</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <!-- ADR 003 -->
+    <article class="adr" id="adr-3">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;003 · Provisioning</p>
+          <h2>Lambda + SQS for async subscription provisioning</h2>
+        </div>
+        <span class="status-pill">Accepted · in production</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>When a customer subscribes, control-plane resources need provisioning before the platform is usable — tenant config, initial records, whatever a given app integration requires. This is triggered by an external event, not a waiting HTTP caller. The work is variable in duration and can fail transiently, and a dropped provisioning event means a paying customer who can't use the product, with no signal to anyone that something went wrong.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — Synchronous handler in the Gateway API</span><p>Reacts directly to a webhook. Simple, but couples provisioning reliability to Gateway uptime and deploy cadence; a slow step risks tying up request-handling capacity or silently dropping the event on timeout.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Always-on worker service</span><p>A long-running consumer subscribed to the event stream. Reasonable, but for low, bursty volume it pays for idle compute most of the time and is one more service to deploy and keep healthy.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — SQS-triggered Lambda</span><p>Pay only for actual invocations. Natural retry/backoff and dead-letter handling from the queue. Scales to zero when idle, scales out automatically under burst.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>Subscription-creation events (CloudEvents, published by the upstream subscription system) land on SQS; a Lambda processes each message, provisions what's needed, and replies to a specified address. Failed messages get SQS's built-in retry-with-backoff and a dead-letter queue instead of being silently dropped. We deliberately modeled the Lambda's bootstrapping like our existing .NET API hosting, so it didn't become an unfamiliar island only one engineer could safely touch.</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>Local dev/debugging is genuinely worse — a Lambda test-harness instead of just running the service.</li>
+            <li>Cold starts are a real, if minor, latency cost — acceptable here since nothing blocks on it synchronously.</li>
+            <li>Debugging a failed run means correlating across queue message, invocation logs, and reply — more parts to trace.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>Failures don't get silently lost — retry plus DLQ gave us a durable, inspectable "this didn't go through" state.</li>
+            <li>Near-zero idle cost for bursty, infrequent event volume.</li>
+            <li>Provisioning decoupled from the Gateway API's own release cadence and request capacity entirely.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">Has run without rework since it shipped. The dead-letter queue has paid for itself operationally: on the handful of occasions a downstream dependency had an outage, events queued safely and drained automatically on recovery — zero data loss, no manual intervention.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>I'd push harder on standardizing observability across Lambda and the rest of the .NET fleet from day one — we had a gap where Lambda invocations were harder to correlate in traces, and closing it was retrofit work.</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <!-- ADR 004 -->
+    <article class="adr" id="adr-4">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;004 · State</p>
+          <h2>DynamoDB for connection and event-reply state</h2>
+        </div>
+        <span class="status-pill">Accepted · in production</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>The Gateway API runs as a horizontally scaled, stateless fleet, and each Broker holds a persistent socket (ADR&nbsp;001) to exactly one pod at a time. Whichever pod handles an incoming request has to know which pod is actually holding that Broker's socket — sockets aren't shareable across processes. A related problem later showed up with the events platform (ADR&nbsp;005): request/reply state needs tracking across a fleet where a publisher's poll could land on any pod.</p>
+      <p class="soft">Both problems are the same shape: small, high-churn, per-connection or per-request state every pod needs to read and update with low, predictable latency.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — In-memory + gossip</span><p>Building a correct gossip protocol for connection ownership is a distributed-systems problem we didn't need to take on, and it doesn't survive pod restarts cleanly.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Relational store (Aurora Postgres)</span><p>Would work, but this is high write-churn, key-value-shaped state with no relational integrity needs. Using it here adds write load to infrastructure tuned for actual relational data, for no relational benefit.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Redis/Valkey cache</span><p>Fast and key-value shaped, and already used for session state elsewhere. Not chosen because we wanted durability, not just fast-access ephemerality — a cache eviction losing "who owns this connection" mid-operation was a worse failure mode than the latency cost of durable storage.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — DynamoDB</span><p>Key-value shaped, scales automatically with connection/request volume, durable, and pairs naturally with the Lambda-based provisioning path already using the AWS-native toolchain.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>DynamoDB tracks both connection-ownership metadata (which pod holds which Broker's socket) and events-platform request/reply lifecycle state (metadata, sequence-numbered replies, terminal/expired status).</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>No relational queries or joins — access has to be shaped around keys designed up front, or fall back to a scan.</li>
+            <li>Another data-store type in the operational surface alongside Aurora and Redis/Valkey.</li>
+            <li>Hot-partition risk needed real design-time thought, not something fixable later without migration.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>Effectively unbounded horizontal scale for connection/request volume, with no capacity management.</li>
+            <li>Durable state that survives pod restarts cleanly — no special-cased drain logic on rolling deploys.</li>
+            <li>Low, predictable per-item latency exactly where it matters: the hot path of every dispatch and poll.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">Scaled cleanly through multi-region expansion — separate regional tables rather than a single global table, a deliberate simplicity call over cross-region replication complexity for state that's inherently regional anyway. The main real pain: lost ad-hoc queryability during incident debugging, partially mitigated with targeted secondary indexes added after we learned what questions we actually needed to ask.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>I'd invest more upfront in the access-pattern exercise — writing out every query we'll ever need against a table before choosing keys/indexes — rather than adding indexes reactively after hitting a debugging wall.</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <!-- ADR 005 -->
+    <article class="adr" id="adr-5">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;005 · Eventing</p>
+          <h2>Kafka + SQS + DynamoDB for the partner events platform</h2>
+        </div>
+        <span class="status-pill">Accepted · in production</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>Partners needed to publish events and either fire-and-forget them to interested subscribers, or publish a request and asynchronously poll for replies. Requirements: fan-out to multiple subscribers, a durable pollable request/reply lifecycle spanning minutes, delivery reliable enough for an enterprise SLA, and a publish call that returns fast rather than blocking on downstream delivery.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — Single queue for everything</span><p>Point-to-point delivery works fine, but fan-out to multiple subscribers needs one queue wired per subscriber by hand, and gives no durable, replayable log — which we already anticipated needing.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Managed pub/sub alone, no durable log</span><p>Simpler to operate, but no replay or retained history once delivered or expired. Given known request/reply and eventual-replay needs, too thin on its own.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — Kafka backbone + per-subscriber SQS + DynamoDB lifecycle state</span><p>Kafka gives a durable, replayable, ordered log many subscribers can consume independently. SQS in front of each subscriber gives reliable, individually-retryable delivery. DynamoDB tracks per-request lifecycle state.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>Publisher → plugin validates against schema, persists to a local outbox → 202 Accepted returned immediately → background worker dispatches to the Gateway, which publishes onto Kafka → subscribers consume via their own SQS queue fed from Kafka. For request/reply, response metadata is written to DynamoDB, sequence-numbered, so a publisher can poll in order and explicitly close the lifecycle when done.</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>The most operationally complex piece in the platform — three systems in one feature's critical path, each with its own failure modes.</li>
+            <li>End-to-end tracing across plugin → outbox → worker → Kafka → subscriber SQS is genuinely hard versus a synchronous call chain.</li>
+            <li>Running Kafka, even managed, is a heavier ongoing commitment than a queue-only alternative — partitions, consumer groups, retention.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>True fan-out with zero publisher-side complexity — a new subscriber needs no change to the publish path at all.</li>
+            <li>A durable, replayable event history, which later made message replay for failed deliveries nearly free to add.</li>
+            <li>Clean separation of concerns: Kafka is the log, SQS is per-subscriber delivery, DynamoDB is fast lookup state — each doing the one job it's good at.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">Shipped as the platform's real-time partner-notification capability, one of the larger deliveries of the period. Within a quarter of GA we added access controls, audit logging, pagination, and message replay on top — straightforward additions specifically because the log-based foundation already supported them.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>Given the operational cost, I'd want to more explicitly validate whether a simpler managed pub/sub-plus-replay offering could meet the requirement before committing to Kafka — we leaned partly on existing team Kafka experience elsewhere in the org, a legitimate factor but one I'd weigh more deliberately next time.</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <!-- ADR 006 -->
+    <article class="adr" id="adr-6">
+      <div class="adr-head">
+        <div>
+          <p class="adr-num">ADR&nbsp;006 · Infrastructure</p>
+          <h2>Terraform over Crossplane for infrastructure-as-code</h2>
+        </div>
+        <span class="status-pill">Accepted · migration complete</span>
+      </div>
+
+      <h3>Context</h3>
+      <p>Infrastructure spans networking, IAM, Aurora Postgres, Redis/Valkey, API Gateway, Lambda, SQS, DynamoDB, S3, WAF, KMS, and multi-region deployment — reproducible, reviewable, and safely deployable by a small team without becoming one person's full-time job. We'd started with Crossplane (Kubernetes-native infra management). This wasn't green-field — it was a keep-or-cut-over call made with a year of real operational data behind it.</p>
+
+      <h3>Options considered</h3>
+      <div class="options">
+        <div class="option rejected"><span class="lbl">Rejected — Keep Crossplane</span><p>Fit teams already deep in Kubernetes tooling, but AWS provider coverage lagged what we needed, debugging a stuck reconciliation loop was often harder than reading a plan diff, and team expertise skewed heavily toward Terraform anyway.</p></div>
+        <div class="option rejected"><span class="lbl">Rejected — Stay hybrid</span><p>Split by team or resource type. Rejected because two IaC systems means two mental models and ambiguity about which one owns a given resource — exactly what causes an outage from a change nobody thought would conflict.</p></div>
+        <div class="option chosen"><span class="lbl">Chosen — Terraform, orchestrated via a managed runs platform</span><p>Mature, fast-moving AWS provider. <code>terraform plan</code> gives a reviewable diff before anything applies. Much larger hiring pool and existing team familiarity — directly relevant to a small team's bus factor.</p></div>
+      </div>
+
+      <h3>Decision</h3>
+      <p>Full migration to Terraform, with a defined hard deployment-order chain — IAM/account foundation → global/DNS → networking → shared infra (load balancers, KMS) → datastores/API Gateway/integrations, several parallelizable once earlier layers exist — orchestrated through a managed runs platform for approval and state, split across dedicated repos by ownership. We made it an explicit, dated cutover rather than an indefinite parallel-run, having learned that undefined transitions just accumulate undocumented exceptions.</p>
+
+      <h3>Tradeoffs</h3>
+      <div class="tradeoff-grid">
+        <div class="tradeoff-col gave">
+          <h4>Gave up</h4>
+          <ul>
+            <li>Real migration cost — every Crossplane-managed resource had to be imported into Terraform state carefully; get it wrong and you lose track of a resource or trigger an unwanted recreate.</li>
+            <li>Kubernetes-native resource management, which some teams had built real tooling around.</li>
+            <li>Plan/apply is less continuously self-healing than a reconciling controller — drift can accumulate silently between runs; we added drift-detection tooling to compensate.</li>
+          </ul>
+        </div>
+        <div class="tradeoff-col got">
+          <h4>Got</h4>
+          <ul>
+            <li>Faster access to new AWS resource types and features as they ship, instead of waiting on provider coverage.</li>
+            <li>A genuinely better review experience — a plan diff any engineer, not just an infra specialist, can sanity-check.</li>
+            <li>One IaC system, one mental model, one review surface — no more "which system actually owns this" ambiguity.</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Outcome</h3>
+      <p class="soft">Completed on schedule, paired with self-healing provisioning retry and strengthened secret rotation while already touching the infra layer end to end. Since cutover, incidents from unreviewable or poorly-understood infra changes dropped noticeably — the plan-diff review step catches things a reconciliation loop's eventual convergence previously masked until something broke.</p>
+
+      <div class="reconsider"><span class="lbl">What I'd reconsider today</span>The state-import phase was the highest-risk part and ran longer than scoped, mostly from undocumented manual tweaks accumulated outside Crossplane's control. I'd budget significantly more time for an infrastructure audit before any future large-scale IaC migration.</div>
+      <a class="back-top" href="#top">↑ back to overview</a>
+    </article>
+
+    <footer class="foot">Six-part series · outbound-only connectivity, binary transfer, async provisioning, connection state, eventing, and infrastructure-as-code — one constraint (no inbound to on-prem) running through all of it.</footer>
+  </main>
+</div>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
